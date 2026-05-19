@@ -1,0 +1,65 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: file-upload-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/dfpp}
+    username: ${DB_USER:dfpp}
+    password: ${DB_PASSWORD:dfpp}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+    open-in-view: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+    consumer:
+      group-id: upload-progress-sync
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.dfpp.common.event,com.dfpp.common.model"
+        spring.json.value.default.type: com.dfpp.common.event.ProcessingProgressEvent
+        spring.json.use.type.headers: false
+  servlet:
+    multipart:
+      max-file-size: ${MAX_FILE_SIZE:50MB}
+      max-request-size: ${MAX_REQUEST_SIZE:55MB}
+
+app:
+  upload:
+    storage-dir: ${UPLOAD_DIR:/data/uploads}
+    max-bytes: ${UPLOAD_MAX_BYTES:52428800}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dfpp-super-secret-key-change-me-in-prod-0123456789}
+    validity-ms: ${JWT_VALIDITY_MS:86400000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.dfpp: INFO

@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1
+# ---------- Build stage: compile the whole multi-module backend once ----------
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /workspace
+
+# Cache dependencies first
+COPY backend/pom.xml backend/pom.xml
+COPY backend/common/pom.xml backend/common/pom.xml
+COPY backend/api-gateway/pom.xml backend/api-gateway/pom.xml
+COPY backend/file-upload-service/pom.xml backend/file-upload-service/pom.xml
+COPY backend/processing-worker-service/pom.xml backend/processing-worker-service/pom.xml
+COPY backend/notification-service/pom.xml backend/notification-service/pom.xml
+RUN cd backend && mvn -q -B -e -DskipTests dependency:go-offline || true
+
+# Build
+COPY backend backend
+RUN cd backend && mvn -q -B -DskipTests clean package
+
+# ---------- Runtime stage: minimal JRE, non-root ----------
+FROM eclipse-temurin:21-jre-jammy AS runtime
+ARG SERVICE
+ENV SERVICE=${SERVICE}
+
+# curl is needed for the HEALTHCHECK (not present in the slim JRE image)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create unprivileged user
+RUN groupadd --system dfpp && useradd --system --gid dfpp --home /app dfpp
+WORKDIR /app
+
+COPY --from=build /workspace/backend/${SERVICE}/target/${SERVICE}.jar /app/app.jar
+RUN mkdir -p /data/uploads && chown -R dfpp:dfpp /app /data
+
+USER dfpp
+EXPOSE 8080
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC"
+
+HEALTHCHECK --interval=20s --timeout=4s --start-period=45s --retries=4 \
+  CMD curl -fsS http://localhost:${SERVER_PORT:-8080}/actuator/health/readiness | grep -q UP || exit 1
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

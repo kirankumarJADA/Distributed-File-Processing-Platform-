@@ -1,0 +1,97 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+      routes:
+        # ---- Public auth endpoints (no JWT required, but still rate limited) ----
+        - id: auth
+          uri: ${UPSTREAM_UPLOAD:http://localhost:8081}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+                key-resolver: "#{@rateLimitKeyResolver}"
+
+        # ---- File upload / metadata (JWT required) ----
+        - id: files
+          uri: ${UPSTREAM_UPLOAD:http://localhost:8081}
+          predicates:
+            - Path=/api/files/**
+          filters:
+            - JwtAuth
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 20
+                redis-rate-limiter.burstCapacity: 40
+                key-resolver: "#{@rateLimitKeyResolver}"
+
+        # ---- Admin-only stats (JWT + ADMIN role) ----
+        - id: admin
+          uri: ${UPSTREAM_UPLOAD:http://localhost:8081}
+          predicates:
+            - Path=/api/admin/**
+          filters:
+            - name: JwtAuth
+              args:
+                requiredRole: ADMIN
+
+        # ---- Notification service WebSocket + REST ----
+        - id: notifications
+          uri: ${UPSTREAM_NOTIFY:http://localhost:8083}
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - JwtAuth
+        - id: notifications-ws
+          uri: ${UPSTREAM_NOTIFY_WS:ws://localhost:8083}
+          predicates:
+            - Path=/ws/**
+
+        # ---- Monitoring passthrough (worker / aggregate metrics) ----
+        - id: monitoring
+          uri: ${UPSTREAM_WORKER:http://localhost:8082}
+          predicates:
+            - Path=/api/monitoring/**
+          filters:
+            - JwtAuth
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,gateway,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dfpp-super-secret-key-change-me-in-prod-0123456789}
+    validity-ms: ${JWT_VALIDITY_MS:86400000}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.dfpp: INFO

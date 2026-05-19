@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dfpp
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dfpp-config
+  namespace: dfpp
+data:
+  KAFKA_BOOTSTRAP: "kafka:9092"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  DB_URL: "jdbc:postgresql://postgres:5432/dfpp"
+  UPLOAD_DIR: "/data/uploads"
+  WORKER_CONCURRENCY: "3"
+  WORKER_MAX_ATTEMPTS: "4"
+  UPSTREAM_UPLOAD: "http://file-upload-service:8081"
+  UPSTREAM_WORKER: "http://processing-worker-service:8082"
+  UPSTREAM_NOTIFY: "http://notification-service:8083"
+  UPSTREAM_NOTIFY_WS: "ws://notification-service:8083"
+  CORS_ORIGINS: "http://dfpp.local"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dfpp-secret
+  namespace: dfpp
+type: Opaque
+stringData:
+  JWT_SECRET: "dfpp-super-secret-key-change-me-in-prod-0123456789"
+  DB_USER: "dfpp"
+  DB_PASSWORD: "dfpp"

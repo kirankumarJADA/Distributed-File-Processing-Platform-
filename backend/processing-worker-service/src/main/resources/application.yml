@@ -1,0 +1,46 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: processing-worker-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP:localhost:9092}
+
+app:
+  worker:
+    id: ${WORKER_ID:worker-1}
+    concurrency: ${WORKER_CONCURRENCY:3}
+    max-attempts: ${WORKER_MAX_ATTEMPTS:4}
+    backoff-base-ms: ${WORKER_BACKOFF_MS:1000}
+  kafka:
+    topic:
+      uploaded: file.uploaded
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:dfpp-super-secret-key-change-me-in-prod-0123456789}
+    validity-ms: ${JWT_VALIDITY_MS:86400000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      worker: ${app.worker.id}
+
+logging:
+  level:
+    com.dfpp: INFO
+    org.apache.kafka: WARN

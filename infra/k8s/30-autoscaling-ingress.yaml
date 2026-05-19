@@ -1,0 +1,84 @@
+# ---------------- Horizontal Pod Autoscalers ----------------
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: processing-worker-hpa
+  namespace: dfpp
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: processing-worker-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 65 }
+    - type: Resource
+      resource:
+        name: memory
+        target: { type: Utilization, averageUtilization: 75 }
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - { type: Pods, value: 2, periodSeconds: 30 }
+    scaleDown:
+      stabilizationWindowSeconds: 120
+      policies:
+        - { type: Pods, value: 1, periodSeconds: 60 }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway-hpa
+  namespace: dfpp
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }
+---
+# ---------------- Ingress ----------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dfpp-ingress
+  namespace: dfpp
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "55m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: dfpp.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port: { number: 8080 }
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port: { number: 8080 }
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port: { number: 80 }
