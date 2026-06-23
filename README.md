@@ -6,7 +6,7 @@ distributed workers coordinated through **Apache Kafka**, with **real-time
 progress** streamed back to a live dashboard over WebSocket.
 
 This is a portfolio project built to demonstrate backend & cloud engineering:
-distributed systems, asynchronous processing, worker queues, fault tolerance,
+distributed systems, asynchronous processihng, worker queues, fault tolerance,
 idempotency, retries with backoff, dead-letter queues, observability, and
 Kubernetes-native scalability.
 
@@ -295,7 +295,7 @@ gateway 2→6). Replace `OWNER` in the image references with your GHCR org.
 
 ### Live Dashboard
 
-![Dashboard](docs/screenshot-dashboard.png)
+![Dashboard](docs/screen%20shots/Dashboard.png)
 
 Real-time distributed file processing dashboard showing:
 - Kafka worker activity
@@ -306,7 +306,7 @@ Real-time distributed file processing dashboard showing:
 
 ### Grafana Monitoring
 
-![Grafana](docs/screenshot-grafana.png)
+![Grafana](ocs/screen%20shots/Grafana%20dashboard.png)
 
 Production monitoring with:
 - JVM memory metrics
@@ -317,14 +317,14 @@ Production monitoring with:
 
 ### Running Containers
 
-![Docker](docs/screenshot-docker.png)
+![Docker](docs/screen%20shots/docker%20compose%20ps.png)
 
 Docker Compose multi-container environment:
 Kafka, PostgreSQL, Redis, Spring Boot microservices, Prometheus and Grafana.
 
 ### Architecture / Infrastructure
 
-![Architecture](docs/screenshot-architecture.png)
+![Architecture](docs/screen%20shots/docker%20ps.png)
 
 Distributed microservice architecture running locally with Docker Compose.
 
