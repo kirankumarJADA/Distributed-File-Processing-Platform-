@@ -306,7 +306,7 @@ Real-time distributed file processing dashboard showing:
 
 ### Grafana Monitoring
 
-![Grafana](ocs/screen%20shots/Grafana%20dashboard.png)
+![Grafana](odcs/screen%20shots/Grafana%20dashboard.png)
 
 Production monitoring with:
 - JVM memory metrics
